@@ -1,0 +1,28 @@
+{
+  "name": "aframe-index-api",
+  "description": "An HTTP REST API for maintaining the A-Frame Index.",
+  "repository": "https://github.com/aframevr-userland/aframe-index-api",
+  "image": "heroku/nodejs",
+  "logo": "https://index.aframe.io/icon.svg",
+  "keywords": [
+    "node",
+    "express",
+    "aframe",
+    "aframevr",
+    "aframevr-userland",
+    "aframe-userland",
+    "aframe-index-api",
+    "aframe-index",
+    "webvr",
+    "manifest",
+    "manifests",
+    "web-app-manifest",
+    "web-app-manifests",
+    "webappmanifests",
+    "webapp-manifest",
+    "webappmanifest",
+    "api",
+    "json",
+    "rest"
+  ]
+}

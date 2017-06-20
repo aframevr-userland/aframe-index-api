@@ -1,6 +1,6 @@
 {
   "name": "aframe-index-api",
-  "description": "An HTTP REST API for updating entries in the A-Frame Index.",
+  "description": "An HTTP REST API for maintaining the A-Frame Index.",
   "author": "A-Frame authors",
   "version": "0.1.0",
   "main": "index.js",

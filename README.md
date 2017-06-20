@@ -1,6 +1,6 @@
 # aframe-index-api
 
-An HTTP REST API for updating entries in the **[A-Frame Index](https://index.aframe.io/)**.
+An HTTP REST API for maintaining the **[A-Frame Index](https://index.aframe.io/)**.
 
 
 ### Development

@@ -9,5 +9,4 @@ examples/node_modules/
 gh-pages
 my-*/
 node_modules/
-public/
 tmp/
