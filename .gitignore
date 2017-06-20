@@ -4,6 +4,7 @@
 .public/
 .sw[ponm]
 *.log
-gh-pages
+/gh-pages
+/settings_*.js
+/tmp
 node_modules/
-tmp/
