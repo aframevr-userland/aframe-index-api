@@ -26,7 +26,7 @@ const ALLOWED_COLLECTIONS = {
   manifests: 'manifests.json',
   works: 'works.json'
 };
-const DEFAULT_BASE_URL = 'https://api.index.aframe.io';
+const DEFAULT_BASE_URL = settingsDefault.baseUrl;
 
 const app = express();
 app.server = http.createServer(app);

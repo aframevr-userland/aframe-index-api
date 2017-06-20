@@ -6,7 +6,7 @@ let settings = {
 };
 
 if (NODE_ENV === 'production') {
-  settings.baseUrl = 'https://api.index.aframe.io';
+  settings.baseUrl = 'https://index-api.aframe.io';
 }
 
 module.exports = settings;
