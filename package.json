@@ -29,7 +29,7 @@
     "resource-router-middleware": "^0.7.0"
   },
   "devDependencies": {
-    "clipboardy": "^1.1.2",
+    "clipboardy": "^1.1.4",
     "nodemon": "^1.11.0",
     "semistandard": "^11.0.0",
     "snazzy": "^7.0.0"

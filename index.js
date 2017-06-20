@@ -484,9 +484,9 @@ if (!module.parent) {
       const serverHost = listener.address().address;
       const serverPort = listener.address().port;
       settings.baseUrl = `http://${serverHost}:${serverPort}`;
+      clipboardy.writeSync(settings.baseUrl);
     }
     console.log('Listening on %s', settings.baseUrl);
-    clipboardy.writeSync(settings.baseUrl);
   });
   module.exports.listener = listener;
 }
