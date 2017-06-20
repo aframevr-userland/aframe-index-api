@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-// const logger = require('loggy');
-// process.on('unhandledRejection', err => { throw err; });
-// process.on('SIGINT', () => process.exit());
-// process.on('SIGTERM', () => process.exit());
-// process.on('exit', () => process.exit(logger.errorHappened ? 1 : 0));
+process.on('unhandledRejection', err => { throw err; });
 
 require('dotenv').config();
 
