@@ -1,0 +1,13 @@
+.component
+.DS_Store
+.env
+.public/
+.sw[ponm]
+*.log
+examples/build.js
+examples/node_modules/
+gh-pages
+my-*/
+node_modules/
+public/
+tmp/

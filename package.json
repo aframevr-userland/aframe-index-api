@@ -1,0 +1,37 @@
+{
+  "name": "aframe-index-api",
+  "description": "An HTTP REST API for updating entries in the A-Frame Index.",
+  "author": "A-Frame authors",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "CC0-1.0",
+  "repository": "aframevr-userland/aframe-index-manager",
+  "homepage": "https://github.com/aframevr-userland/aframe-index-manager",
+  "bugs": "https://github.com/aframevr-userland/aframe-index-manager/issues",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "cross-env NODE_ENV='development' nodemon index.js",
+    "prod": "cross-env NODE_ENV='production' node index.js",
+    "lint": "semistandard -v | snazzy"
+  },
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "cors": "^2.8.3",
+    "cross-env": "^5.0.1",
+    "deep-assign": "^2.0.0",
+    "dotenv": "^4.0.0",
+    "express": "^4.15.3",
+    "fetch-manifest": "^1.2.4",
+    "github": "^9.2.0",
+    "github-db": "^1.0.2",
+    "morgan": "^1.8.2",
+    "node-fetch": "^1.7.1",
+    "resource-router-middleware": "^0.7.0"
+  },
+  "devDependencies": {
+    "clipboardy": "^1.1.2",
+    "nodemon": "^1.11.0",
+    "semistandard": "^11.0.0",
+    "snazzy": "^7.0.0"
+  }
+}

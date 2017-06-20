@@ -1,0 +1,2 @@
+curl -X POST -H "Content-Type: application/json" -d '{"url": "https://bb8.surge.sh/manifest.json"}' "http://0.0.0.0:3000/api/works"
+curl -X POST -H "Content-Type: application/json" -d '{"url": "https://aframe.io/a-painter"}' "http://0.0.0.0:3000/api/works"
