@@ -47,26 +47,26 @@ app.use(bodyParser.json());
 /**
  * Creates a callback that proxies node callback style arguments to an Express
  * `Response` object.
- *	@param {express.Response} res	Express HTTP Response
- *	@param {number} [status=200]	Status code to send on success
+ * @param {express.Response} res  Express HTTP Response
+ * @param {number} [status=200]  Status code to send on success
  *
- *	@example
- *		list (req, res) {
- *			collection.find({}, toRes(res));
- *		}
+ * @example
+ *   list (req, res) {
+ *     collection.find({}, toRes(res));
+ *   }
  */
-const toRes = (res, status=200) => {
-	return (err, item) => {
-		if (err) {
+const toRes = (res, status = 200) => {
+  return (err, item) => {
+    if (err) {
       return res.status(500).send(err);
     }
 
-		if (item && typeof item.toObject === 'function') {
-			item = item.toObject();
-		}
+    if (item && typeof item.toObject === 'function') {
+      item = item.toObject();
+    }
 
-		res.status(status).json(item);
-	};
+    res.status(status).json(item);
+  };
 };
 
 const persist = (collectionName, data, idx) => {
@@ -167,11 +167,11 @@ const load = (collectionName, data, idx) => {
     }).catch(err => {
       console.log('Failed to load data from GitHub repo `%s/%s`:',
         options.path, options.owner, options.repo, err || '(Unknown error)');
-    })
+    });
   }, err => {
     console.log('Failed to authenticate to GitHub repo `%s/%s`:',
       options.owner, options.repo, err || '(Unknown error)');
-  })
+  });
 };
 
 const utils = {
@@ -222,28 +222,28 @@ load('works').then(results => {
 });
 
 const apiManifests = ({settings}) => resourceRouter({
-	/** Property name to store preloaded entity on `request`. */
-	id: 'manifest',
+  /** Property name to store preloaded entity on `request`. */
+  id: 'manifest',
 
-	/**
+  /**
    * For requests with an `idx`, you can auto-load the entity.
-	 * Errors terminate the request; successes set `req[idx] = data`.
-	 */
-	load (req, idx, callback) {
-		let manifest = manifests.find(manifest => manifest._idx === idx);
-		let err = manifest ? null : 'Not found';
+   * Errors terminate the request; successes set `req[idx] = data`.
+   */
+  load (req, idx, callback) {
+    let manifest = manifests.find(manifest => manifest._idx === idx);
+    let err = manifest ? null : 'Not found';
     if (typeof callback === 'function') {
-		  callback(err, manifest);
+      callback(err, manifest);
     }
-	},
+  },
 
-	/** GET / - List all entities. */
-	index ({params}, res) {
-		res.json(manifests);
-	},
+  /** GET / - List all entities. */
+  index ({params}, res) {
+    res.json(manifests);
+  },
 
-	/** POST / - Create a new entity. */
-	create ({body}, res) {
+  /** POST / - Create a new entity. */
+  create ({body}, res) {
     let manifestOrUrl = body;
 
     const numKeys = Object.keys(body);
@@ -364,31 +364,31 @@ const apiManifests = ({settings}) => resourceRouter({
         message: 'Could not submit manifest'
       }, body);
     });
-	},
+  },
 
-	/** GET /:id - Return a given entity. */
-	read ({manifest}, res) {
-		res.json(manifest);
-	},
+  /** GET /:id - Return a given entity. */
+  read ({manifest}, res) {
+    res.json(manifest);
+  },
 
-	/** PUT /:id - Update a given entity. */
-	update ({manifest, body}, res) {
+  /** PUT /:id - Update a given entity. */
+  update ({manifest, body}, res) {
     // TODO: Persist updates to snapshot repository on GitHub.
-		Object.keys(body).forEach(key => {
+    Object.keys(body).forEach(key => {
       if (key === 'id' || key.charAt(0) === '_') {
         return;
       }
-			manifest[key] = body[key];
-		});
+      manifest[key] = body[key];
+    });
     manifestsByManifestUrl[manifest.processed_final_manifest_url] = manifest;
     worksByManifestUrl[manifest.processed_final_manifest_url] = manifest;
-		res.sendStatus(204);
-	},
+    res.sendStatus(204);
+  },
 
-	/** DELETE /:id - Delete a given entity. */
-	delete({manifest}, res) {
+  /** DELETE /:id - Delete a given entity. */
+  delete ({manifest}, res) {
     // TODO: Persist deletions to snapshot repository on GitHub.
-		manifests.splice(manifests.indexOf(manifest), 1);
+    manifests.splice(manifests.indexOf(manifest), 1);
     works = works.forEach((work, idx) => {
       if (manifest._work_idx && work._idx === manifest._work_idx) {
         works.splice(works.indexOf(work), 1);
@@ -396,19 +396,19 @@ const apiManifests = ({settings}) => resourceRouter({
     });
     delete manifestsByManifestUrl[manifest.processed_final_manifest_url];
     delete worksByManifestUrl[manifest.processed_final_manifest_url];
-		res.sendStatus(204);
-	}
+    res.sendStatus(204);
+  }
 });
 
 const apiWorks = ({settings}) => resourceRouter({
-	/** Property name to store preloaded entity on `request`. */
-	id: 'work',
+  /** Property name to store preloaded entity on `request`. */
+  id: 'work',
 
-	/**
+  /**
    * For requests with an `idx`, you can auto-load the entity.
-	 * Errors terminate the request; successes set `req[idx] = data`.
-	 */
-	load (req, idx, callback) {
+   * Errors terminate the request; successes set `req[idx] = data`.
+   */
+  load (req, idx, callback) {
     let work;
 
     if (typeof idx === 'string' && !utils.isStrANumber(idx)) {
@@ -418,51 +418,51 @@ const apiWorks = ({settings}) => resourceRouter({
       work = works.find(work => work._idx === idx);
     }
 
-		let err = work ? null : 'Not found';
+    let err = work ? null : 'Not found';
     if (typeof callback === 'function') {
-		  callback(err, work);
+      callback(err, work);
     }
-	},
+  },
 
-	/** GET / - List all entities. */
-	index ({params}, res) {
-		res.json(works);
-	},
+  /** GET / - List all entities. */
+  index ({params}, res) {
+    res.json(works);
+  },
 
-	/** POST / - Create a new entity. */
-	create ({body}, res) {
+  /** POST / - Create a new entity. */
+  create ({body}, res) {
     toRes(res, 400)({
       error: true,
       name: 'Bad Request',
       message: 'This is a read-only endpoint (you must submit new works ' +
                'using the respective API endpoint defined at `manifests_url`)'
     }, body);
-	},
+  },
 
-	/** GET /:id - Return a given entity. */
-	read ({work}, res) {
-		res.json(work);
-	},
+  /** GET /:id - Return a given entity. */
+  read ({work}, res) {
+    res.json(work);
+  },
 
-	/** PUT /:id - Update a given entity. */
-	update ({work, body}, res) {
+  /** PUT /:id - Update a given entity. */
+  update ({work, body}, res) {
     toRes(res, 400)({
       error: true,
       name: 'Bad Request',
       message: 'This is a read-only endpoint (you must submit new works ' +
                'using the respective API endpoint defined at `manifests_url`)'
     }, body);
-	},
+  },
 
-	/** DELETE /:id - Delete a given entity. */
-	delete({work}, res) {
+  /** DELETE /:id - Delete a given entity. */
+  delete ({work}, res) {
     toRes(res, 400)({
       error: true,
       name: 'Bad Request',
       message: 'This is a read-only endpoint (you must submit new works ' +
                'using the respective API endpoint defined at `manifests_url`)'
     });
-	}
+  }
 });
 
 const api = settings => {
