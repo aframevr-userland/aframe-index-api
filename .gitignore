@@ -4,9 +4,6 @@
 .public/
 .sw[ponm]
 *.log
-examples/build.js
-examples/node_modules/
 gh-pages
-my-*/
 node_modules/
 tmp/
