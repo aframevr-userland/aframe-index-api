@@ -5,7 +5,7 @@
 // process.on('SIGTERM', () => process.exit());
 // process.on('exit', () => process.exit(logger.errorHappened ? 1 : 0));
 
-require('dotenv');
+require('dotenv').config();
 
 const http = require('http');
 
@@ -13,7 +13,7 @@ const bodyParser = require('body-parser');
 const express = require('express');
 const deepAssign = require('deep-assign');
 const fetchManifest = require('fetch-manifest').fetchManifest;
-// const GithubDB = require('github-db').default;
+const GithubDB = require('github-db').default;
 const resourceRouter = require('resource-router-middleware');
 const clipboardy = require('clipboardy');
 const cors = require('cors');
@@ -27,19 +27,11 @@ try {
 } catch (e) {
 }
 
-// const ghDBOptions = {
-//   user: 'aframevr-userland',
-//   repo: 'aframe-index-db',
-//   remoteFilename: 'index.json'
-// };
-
-// const githubDB = new GithubDB(ghDBOptions);
-
-// function auth () {
-//   // Token generated from here: https://github.com/settings/tokens
-//   githubDB.auth(process.env.GH_TOKEN);
-//   githubDB.connectToRepo();
-// }
+const ALLOWED_COLLECTIONS = {
+  manifests: 'manifests.json',
+  works: 'works.json'
+};
+const DEFAULT_BASE_URL = 'https://api.index.aframe.io';
 
 const app = express();
 app.server = http.createServer(app);
@@ -77,6 +69,111 @@ const toRes = (res, status=200) => {
 	};
 };
 
+const persist = (collectionName, data, idx) => {
+  collectionName = (collectionName || '').trim().toLowerCase().replace(/\..+/, '');
+
+  console.log('Persisting "%s"', collectionName);
+
+  if (!(collectionName in ALLOWED_COLLECTIONS)) {
+    return Promise.resolve(false);
+  }
+
+  const collectionPath = ALLOWED_COLLECTIONS[collectionName];
+
+  const options = {
+    owner: 'aframevr-userland',
+    repo: 'aframe-index-snapshot',
+    path: collectionPath
+  };
+
+  const githubDB = new GithubDB(options);
+
+  function auth () {
+    // Token generated from here: https://github.com/settings/tokens
+    githubDB.auth(process.env.GH_TOKEN);
+    return githubDB.connectToRepo();
+  }
+
+  return auth().then(() => {
+    if (idx) {
+      return githubDB.update({_idx: idx}, data, {
+        multi: true,
+        upsert: true
+      });
+    } else {
+      return githubDB.save(data);
+    }
+  }, err => {
+    console.log('Failed to authenticate to GitHub repo `%s/%s`:',
+      options.owner, options.repo, err || '(Unknown error)');
+  })
+  .then(() => {
+    console.log('Successfully persisted "%s" data to GitHub repo `%s/%s`',
+      options.path, options.owner, options.repo);
+    return Promise.resolve(true);
+  }).catch(err => {
+    console.log('Failed to persist data to GitHub repo `%s/%s`:',
+      options.path, options.owner, options.repo, err || '(Unknown error)');
+  });
+};
+
+const load = (collectionName, data, idx) => {
+  let queryFilter = {};
+
+  if (typeof idx !== 'undefined') {
+    if (typeof idx === 'object') {
+      queryFilter = idx;
+    } else {
+      queryFilter = {_idx: String(idx)};
+    }
+  }
+
+  collectionName = (collectionName || '').trim().toLowerCase().replace(/\..+/, '');
+
+  console.log('Loading "%s"', collectionName);
+
+  if (!(collectionName in ALLOWED_COLLECTIONS)) {
+    return Promise.resolve(false);
+  }
+
+  const collectionPath = ALLOWED_COLLECTIONS[collectionName];
+
+  const options = {
+    owner: 'aframevr-userland',
+    repo: 'aframe-index-snapshot',
+    path: collectionPath
+  };
+
+  const githubDB = new GithubDB(options);
+
+  function auth () {
+    // Token generated from here: https://github.com/settings/tokens
+    githubDB.auth(process.env.GH_TOKEN);
+    return githubDB.connectToRepo();
+  }
+
+  return auth().then(() => {
+    return githubDB.find(queryFilter)
+    .then(results => {
+      console.log('Successfully loaded "%s" data from GitHub repo `%s/%s`',
+        options.path, options.owner, options.repo);
+      if (typeof results !== 'object') {
+        try {
+          results = JSON.parse(results);
+        } catch (e) {
+        }
+      }
+      return Promise.resolve(results);
+    }).catch(err => {
+      console.log('Failed to load data from GitHub repo `%s/%s`:',
+        options.path, options.owner, options.repo, err || '(Unknown error)');
+    })
+  }, err => {
+    console.log('Failed to authenticate to GitHub repo `%s/%s`:',
+      options.owner, options.repo, err || '(Unknown error)');
+  })
+};
+
 const utils = {
   isStrANumber: num => !isNaN(num),
   getTitleCasedStr: str => {
@@ -91,7 +188,7 @@ const rootObj = ({ pkg, settings }) => {
     status: 'ok',
     version: apiVersion,
     manifests_url: `${settings.baseUrl}/api/manifests`,
-    // scene_url: `${settings.baseUrl}{/owner}{/scene_slug}`,
+    works_url: `${settings.baseUrl}/api/works`
   };
 };
 
@@ -99,20 +196,41 @@ const apiRoot = (req, res) => {
   res.json(rootObj({pkg: pkgJson, settings: settings}));
 };
 
+let manifestsByManifestUrl = {};
+let worksByManifestUrl = {};
 let manifests = [];
 let works = [];
-let worksByManifestUrl = {};
+
+load('manifests').then(results => {
+  manifests = results;
+  manifests.forEach(manifest => {
+    if (!manifest.processed_final_manifest_url) {
+      return;
+    }
+    manifestsByManifestUrl[manifest.processed_final_manifest_url] = manifest;
+  });
+});
+
+load('works').then(results => {
+  works = results;
+  works.forEach(work => {
+    if (!work.processed_final_manifest_url) {
+      return;
+    }
+    worksByManifestUrl[work.processed_final_manifest_url] = work;
+  });
+});
 
 const apiManifests = ({settings}) => resourceRouter({
 	/** Property name to store preloaded entity on `request`. */
 	id: 'manifest',
 
 	/**
-   * For requests with an `id`, you can auto-load the entity.
-	 * Errors terminate the request; successes set `req[id] = data`.
+   * For requests with an `idx`, you can auto-load the entity.
+	 * Errors terminate the request; successes set `req[idx] = data`.
 	 */
-	load (req, id, callback) {
-		let manifest = manifests.find(manifest => manifest._id === id);
+	load (req, idx, callback) {
+		let manifest = manifests.find(manifest => manifest._idx === idx);
 		let err = manifest ? null : 'Not found';
     if (typeof callback === 'function') {
 		  callback(err, manifest);
@@ -145,8 +263,8 @@ const apiManifests = ({settings}) => resourceRouter({
     return fetchManifest(manifestOrUrl).then(manifest => {
       const dateFetched = new Date();
 
-      if (!manifest._id) {
-        manifest._id = (manifests.length + 1).toString(36);
+      if (!manifest._idx) {
+        manifest._idx = String(manifests.length + 1);
       }
 
       manifest._date_fetched_milliseconds = dateFetched.getTime();
@@ -187,43 +305,63 @@ const apiManifests = ({settings}) => resourceRouter({
 
       manifest._work_type = utils.getTitleCasedStr(manifest['@type'] || manifest.type || 'Site');
 
-      let work = {};
+      let work;
+      let worksArrayIdxToUpdate = -1;
 
       if (manifest.processed_final_manifest_url in worksByManifestUrl) {
-        work = works.find((work, idx) => {
-          const isFound = work._id === manifest._work_id;
-          if (isFound) {
-            works[idx] = manifest;
-            return true;
-          }
-        });
+        manifest._work_idx = worksByManifestUrl[manifest.processed_final_manifest_url]._idx;
       } else {
-        if (!manifest._work_id) {
-          manifest._work_id = (works.length + 1).toString(36);
-        }
-        work = manifest;
-
-        work = deepAssign({}, manifest, {
-          _id: manifest._work_id,
-          _manifest_id: manifest._id
-        });
-        delete work._work_id;
-
-        works.push(work);
-
+        manifest._work_idx = String(works.length + 1);
       }
+
+      works.find((work, idx) => {
+        if (work._idx === manifest._work_idx) {
+          worksArrayIdxToUpdate = idx;
+          return true;
+        }
+      });
+
+      work = deepAssign({}, manifest, {
+        _idx: manifest._work_idx,
+        _manifest_idx: manifest._idx
+      });
+      delete work._work_idx;
+
+      if (worksArrayIdxToUpdate > -1) {
+        works[worksArrayIdxToUpdate] = work;
+      } else {
+        works.push(work);
+      }
+
+      manifestsByManifestUrl[manifest.processed_final_manifest_url] = manifest;
 
       worksByManifestUrl[manifest.processed_final_manifest_url] = work;
 
       manifests.push(manifest);
 
       res.json(manifest);
-    }).catch(err => {
+
+      return persist('manifests', manifests).then(() => new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (work) {
+            return persist('works', work, work._idx).then(resolve, reject);
+          }
+          resolve(false);
+        }, 3000);
+      }));
+    }, err => {
       console.warn(err);
       toRes(res, 500)({
         error: true,
         name: 'Internal Server Error',
         message: 'Could not fetch web-app manifest data'
+      }, body);
+    }).catch(err => {
+      console.warn(err);
+      toRes(res, 500)({
+        error: true,
+        name: 'Internal Server Error',
+        message: 'Could not submit manifest'
       }, body);
     });
 	},
@@ -235,19 +373,28 @@ const apiManifests = ({settings}) => resourceRouter({
 
 	/** PUT /:id - Update a given entity. */
 	update ({manifest, body}, res) {
+    // TODO: Persist updates to snapshot repository on GitHub.
 		Object.keys(body).forEach(key => {
       if (key === 'id' || key.charAt(0) === '_') {
         return;
       }
 			manifest[key] = body[key];
-      worksByManifestUrl[manifest.processed_final_manifest_url] = body[key];
 		});
+    manifestsByManifestUrl[manifest.processed_final_manifest_url] = manifest;
+    worksByManifestUrl[manifest.processed_final_manifest_url] = manifest;
 		res.sendStatus(204);
 	},
 
 	/** DELETE /:id - Delete a given entity. */
 	delete({manifest}, res) {
+    // TODO: Persist deletions to snapshot repository on GitHub.
 		manifests.splice(manifests.indexOf(manifest), 1);
+    works = works.forEach((work, idx) => {
+      if (manifest._work_idx && work._idx === manifest._work_idx) {
+        works.splice(works.indexOf(work), 1);
+      }
+    });
+    delete manifestsByManifestUrl[manifest.processed_final_manifest_url];
     delete worksByManifestUrl[manifest.processed_final_manifest_url];
 		res.sendStatus(204);
 	}
@@ -258,18 +405,18 @@ const apiWorks = ({settings}) => resourceRouter({
 	id: 'work',
 
 	/**
-   * For requests with an `id`, you can auto-load the entity.
-	 * Errors terminate the request; successes set `req[id] = data`.
+   * For requests with an `idx`, you can auto-load the entity.
+	 * Errors terminate the request; successes set `req[idx] = data`.
 	 */
-	load (req, id, callback) {
+	load (req, idx, callback) {
     let work;
 
-    // if (typeof id === 'string' && !utils.isStrANumber(id)) {
-    //   const manifestUrl = id.trim();
-    //   work = worksByManifestUrl[manifestUrl];
-    // } else {
-      work = works.find(work => work._id === id);
-    // }
+    if (typeof idx === 'string' && !utils.isStrANumber(idx)) {
+      const manifestUrl = idx.trim();
+      work = worksByManifestUrl[manifestUrl];
+    } else {
+      work = works.find(work => work._idx === idx);
+    }
 
 		let err = work ? null : 'Not found';
     if (typeof callback === 'function') {
@@ -330,7 +477,7 @@ app.use('/api', api({settings}));
 app.get('/', apiRoot);
 
 if (!settings.baseUrl && app.get('env') === 'production') {
-  settings.baseUrl = 'https://api.index.aframe.io';
+  settings.baseUrl = DEFAULT_BASE_URL;
 }
 
 if (!module.parent) {
