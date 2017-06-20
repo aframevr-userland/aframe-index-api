@@ -480,10 +480,12 @@ if (!settings.baseUrl && app.get('env') === 'production') {
 
 if (!module.parent) {
   const listener = app.server.listen(settings.port, settings.host, () => {
-    if (!settings.baseUrl && app.get('env') === 'development') {
-      const serverHost = listener.address().address;
-      const serverPort = listener.address().port;
-      settings.baseUrl = `http://${serverHost}:${serverPort}`;
+    if (app.get('env') === 'development') {
+      if (!settings.baseUrl) {
+        const serverHost = listener.address().address;
+        const serverPort = listener.address().port;
+        settings.baseUrl = `http://${serverHost}:${serverPort}`;
+      }
       clipboardy.writeSync(settings.baseUrl);
     }
     console.log('Listening on %s', settings.baseUrl);
