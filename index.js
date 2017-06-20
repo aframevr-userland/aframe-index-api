@@ -11,7 +11,6 @@ const deepAssign = require('deep-assign');
 const fetchManifest = require('fetch-manifest').fetchManifest;
 const GithubDB = require('github-db').default;
 const resourceRouter = require('resource-router-middleware');
-const clipboardy = require('clipboardy');
 const cors = require('cors');
 const morgan = require('morgan');
 
@@ -481,6 +480,7 @@ if (!settings.baseUrl && app.get('env') === 'production') {
 if (!module.parent) {
   const listener = app.server.listen(settings.port, settings.host, () => {
     if (app.get('env') === 'development') {
+      const clipboardy = require('clipboardy');
       if (!settings.baseUrl) {
         const serverHost = listener.address().address;
         const serverPort = listener.address().port;
