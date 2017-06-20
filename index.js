@@ -44,6 +44,8 @@ app.use(express.static('public'));
 
 app.use(bodyParser.json());
 
+// Source: This method and the outline of the routes defined below are adapted
+// from https://github.com/developit/express-es6-rest-api
 /**
  * Creates a callback that proxies node callback style arguments to an Express
  * `Response` object.
