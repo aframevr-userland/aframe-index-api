@@ -39,6 +39,10 @@ app.use(express.static('public'));
 
 app.use(bodyParser.json());
 
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+
 // Source: This method and the outline of the routes defined below are adapted
 // from https://github.com/developit/express-es6-rest-api
 /**
@@ -240,11 +244,16 @@ const apiManifests = ({settings}) => resourceRouter({
   },
 
   /** POST / - Create a new entity. */
-  create ({body}, res) {
-    let manifestOrUrl = body;
+  create (req, res) {
+    const body = req.body || {};
+    if (!body.url) {
+      body.url = req.query.url || req.body.url || req.query.manifest_url || req.body.manifest_url || req.query.site_url || req.body.site_url;
+    }
 
-    const numKeys = Object.keys(body);
-    if (!numKeys.length) {
+    let manifestOrUrl = body.url || body;
+
+    const numKeys = Object.keys(body).length;
+    if (!numKeys) {
       toRes(res, 400)({
         error: true,
         name: 'Bad Request',
@@ -254,7 +263,7 @@ const apiManifests = ({settings}) => resourceRouter({
     }
 
     if (numKeys.length < 3) {
-      manifestOrUrl = (body.url || body.manifest_url || body.site_url || '').trim();
+      manifestOrUrl = body.url.trim();
     }
 
     return fetchManifest(manifestOrUrl).then(manifest => {
